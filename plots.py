@@ -25,7 +25,8 @@ def make_plots (filename):
 			plt.xlabel("Records")
 			plt.ylabel("Cost")
 			plt.xticks(range(0,100000,10000))
-			plt.savefig("linear_splitting_cost_" +filename_+".png")
+			plt.savefig("linear_splitting_cost_" +filename+".png")
+			plt.close()
 
 		elif file=="searchc":
 			with open("searchc_"+filename+".txt","r+") as f:
@@ -40,7 +41,9 @@ def make_plots (filename):
 			plt.title("Search Cost")
 			plt.xlabel("Records")
 			plt.ylabel("Cost")
-			plt.savefig("linear_search_cost_" +filename_+".png")
+			plt.savefig("linear_search_cost_" +filename+".png")
+			plt.close()
+
 		else:
 			with open("su_"+filename+".txt","r+") as f:
 			    content = f.readlines()
@@ -54,7 +57,8 @@ def make_plots (filename):
 			plt.title("Space Utilization")
 			plt.xlabel("Records")
 			plt.ylabel("Cost")
-			plt.savefig("linear_space_utilization_" +filename_+".png")
+			plt.savefig("linear_space_utilization_" +filename+".png")
+			plt.close()
 
 
 make_plots("db_a")

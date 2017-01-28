@@ -393,7 +393,7 @@ void run (int buc_cap, int max_buckets, string db) {
 	MAX_BUCKETS = max_buckets;
 
 	initialize_memory(b);
-	get_records(db,dataset);
+	get_records(db+".txt",dataset);
 	printf("%d\n",MAX_BUCKETS);
 
 	for(int i=0;i<TOTAL_RECORDS;i++) {
