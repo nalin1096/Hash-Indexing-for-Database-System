@@ -9,6 +9,16 @@ int dataset[100000];
 int S = 0;
 int h = 2;
 
+int MAX_BUCKETS = pow(2.0,14.0);
+int TOTAL_RECORDS = 100000;
+int S_COST = 0;
+double SEARCH = 0.0;
+
+vector<double> storage_util;
+vector<int> split_cost;
+vector<int> records_count;
+vector<double> search_cost;
+
 struct ptrs {
 	int arr_idx;
 	int bucket_idx;
@@ -23,18 +33,12 @@ int _hash(int K, int m) {
 }
 
 bool insert_helper(int K, int bucket, int b) {
-	// printf("# Enter\n");
 	string last_char = "x";
 	bool flag = 0;
 
 	do {
-		// printf("HI %d\n", bucket);
 		int empty_buckets = stoi(mem[bucket][0]);
-		// printf("# Empty Buckets %d\n",empty_buckets);
 		last_char = mem[bucket][b+1];
-
-		printf("# Empty buckets in %d is %d and last char is %s\n", bucket, empty_buckets, last_char.c_str());
-		fflush(stdout);
 
 		if (empty_buckets!=0) {
 			int index = b - empty_buckets + 1;
@@ -42,14 +46,12 @@ bool insert_helper(int K, int bucket, int b) {
 			int new_empty_count = empty_buckets - 1;
 			mem[bucket][0] = to_string(new_empty_count);
 			last_char = "~";
-			printf("# Data ADDED!\n");
 		}
 		else {
 			flag = 1;
 			int new_vector_flag = 0;
 			if (last_char=="~") {
 				int idx;
-				printf("# Creating new bucket\n");
 				if (bitmap.empty()) {
 					new_vector_flag = 1;
 					idx = 0;
@@ -82,17 +84,14 @@ bool insert_helper(int K, int bucket, int b) {
 					mem.push_back(t);
 
 					B+=1;
-					int bucket_index = int((100000/b) + idx);
-					printf("%d\n",bucket_index);
+					int bucket_index = int((MAX_BUCKETS) + idx);
 					mem[bucket][b+1] = to_string(bucket_index);
-					printf("# Created Bucket at %s\n", mem[bucket][b+1].c_str());
 				}
 				else {
 					bitmap[idx] = 1;
 					B+=1;
-					int bucket_index = int((100000/b) + idx);
+					int bucket_index = int((MAX_BUCKETS) + idx);
 					mem[bucket_index][1] = to_string(K);
-					printf("%d\n",bucket_index);
 					mem[bucket][b+1] = to_string(bucket_index);
 				}
 			}
@@ -127,22 +126,14 @@ void update_buckets(int b) {
 	fast.bucket_idx = slow.bucket_idx = S;
 	fast.last_char = slow.last_char = mem[S][b+1];
 
-	printf("%s %s\n",fast.last_char.c_str(), slow.last_char.c_str());
-
 	while(fast.last_char != "~" || (fast.last_char=="~" && fast.arr_idx != b)){
-		// printf("# Breakpoint\n");
-		// printf("HELLO: %d\n", stoi(mem[10000][0]));
 		fflush(stdout);
 		if (fast.arr_idx == slow.arr_idx && fast.bucket_idx == slow.bucket_idx) {
 			if (mem[fast.bucket_idx][fast.arr_idx] != "-1") {
-				// printf("# Breakpoint\n");
 				increment_ptr(&fast,b);
-				// printf("# Breakpoint\n");
 				increment_ptr(&slow,b);
-				// printf("# Breakpoint\n");
 			}
 			else {
-				// printf("# Breakpoint\n");
 				increment_ptr(&fast,b);
 			}
 			fflush(stdout);
@@ -165,32 +156,27 @@ void update_buckets(int b) {
 			}
 		}
 	}
-	printf("# Finished While Loop\n");
 
 	if (mem[fast.bucket_idx][fast.arr_idx] != "-1") {
 		mem[slow.bucket_idx][slow.arr_idx] = mem[fast.bucket_idx][fast.arr_idx];
 		mem[fast.bucket_idx][fast.arr_idx] = "-1";
 
 		int bucket_count = stoi(mem[slow.bucket_idx][0]);
-		mem[slow.bucket_idx][0] = to_string(bucket_count + 1);
+		mem[slow.bucket_idx][0] = to_string(bucket_count - 1);
 		bucket_count = stoi(mem[fast.bucket_idx][0]);
-		mem[fast.bucket_idx][0] = to_string(bucket_count - 1);
+		mem[fast.bucket_idx][0] = to_string(bucket_count + 1);
 	} 
 
-	printf("# Finished If statement\n");
 	if (mem[S][b+1] != "~") {
 		int bucket_index = stoi(mem[S][b+1]);
-		printf("BUCKET INDEX: %d\n", bucket_index);
 		string last_char = "x";
 		int previous_bucket = S;
 
 		do {
 			last_char = mem[bucket_index][b+1];
-			printf("LAST CHAR: %s\n",last_char.c_str());
 			int empty_buckets = stoi(mem[bucket_index][0]);
-			printf("IMP SHIZZ %d\n",empty_buckets);
 			if (empty_buckets == b) {
-				int idx = int(bucket_index - (100000/b));
+				int idx = int(bucket_index - (MAX_BUCKETS));
 				bitmap[idx] = 0;
 				B -=1;
 				mem[bucket_index][b+1] = "~";
@@ -214,14 +200,13 @@ void split_bucket(int b) {
 	string last_char = "x";
 
 	do {
+		S_COST++;
 		last_char = mem[temp_S][b+1];
 		empty_buckets = stoi(mem[temp_S][0]);
 		for (int i=1;i<(b-empty_buckets+1);i++) {
 			int bucket = _hash(stoi(mem[temp_S][i]),2);
-			// printf("HASHING BUCKET: %d and VALUE: %d\n",bucket, stoi(mem[temp_S][i]));
-			printf("%d\n",i);
 			if (bucket != S) {
-				printf("# Reshashed\n");
+				S_COST++;
 				flag = 1;
 				insert_helper(stoi(mem[temp_S][i]),bucket,b);
 				mem[temp_S][i] = to_string(-1);
@@ -237,33 +222,29 @@ void split_bucket(int b) {
 	} while(last_char != "~");
 
 	if (flag == 1) {
-		printf("# Updating Buckets\n");
 		update_buckets(b);
 	}
 }	
 
+void splitting_cost() {
+	split_cost.push_back(S_COST);
+	records_count.push_back(N);
+	S_COST = 0;
+}
+
 void insert (int K, int b) {
 	int bucket = _hash(K,1);
-	printf("# Calculated Hash of value to be %d\n", bucket);
 
 	if (bucket < S) {
-		printf("# Calculating higher order Hash\n");
 		bucket = _hash(K,2);
-		printf("# Hash is %d\n", bucket);
 	}
-	fflush(stdout);
 	bool split = insert_helper(K,bucket,b);
 
 	if (split) {
-		printf("# Splitting condition Reached!\n");
-		printf("# Bucket to be split is %d\n", S);
-		printf("# Hash is %d\n", h);
-		for (int i=0;i<mem[S].size();i++) {
-			printf("%s ", mem[S][i].c_str());
-		}
-		printf("\n");
 		B+=1;
 		split_bucket(b);
+		splitting_cost();
+
 
 		int flag = int(((h*2)/2) - 1);
 		if (S==flag) {
@@ -273,17 +254,11 @@ void insert (int K, int b) {
 		else {
 			S+=1;
 		}
-
-		// splitting_cost();
 	}
 }
 
-void lookup (int K) {
-
-}
-
 void get_records (string db, int dataset[]) {
-	int count = 100000;
+	int count = TOTAL_RECORDS;
 
 	ifstream File;
     File.open(db);
@@ -294,7 +269,7 @@ void get_records (string db, int dataset[]) {
 }
 
 void initialize_memory(int b) {
-	for (int i=0;i<int(100000/b);i++) {
+	for (int i=0;i<int(MAX_BUCKETS);i++) {
 		vector<string> t;
 		t.push_back(to_string(b));
 		for (int j=0;j<b;j++) {
@@ -305,34 +280,138 @@ void initialize_memory(int b) {
 	}
 }
 
-int main () {
-	int b = 10;
-	string db = "db_a.txt";
+void storage_utilization (int b) {
+	double calc = (double)N/(B*b);
+	storage_util.push_back(calc);
+}
+
+void generate_queries (int queries[]) {
+	int random_numbers[50];
+	for (int i=0;i<50;i++) {
+		int randNum = rand()%(100000 + 1);
+		random_numbers[i] = randNum;
+	}
+
+	for (int i=0;i<50;i++) {
+		queries[i] = dataset[random_numbers[i]];
+	}
+}
+
+int lookup (int K, int b) {
+	int bucket = _hash(K,1);
+
+	if (bucket < S) {
+		bucket = _hash(K,2);
+	}
+
+	int count = 0;
+	int empty_buckets;
+	string last_char = "x";
+
+	do {
+		count++;
+		last_char = mem[bucket][b+1];
+		empty_buckets = stoi(mem[bucket][0]);
+		for (int i=1;i<(b-empty_buckets+1);i++) {
+			if (stoi(mem[bucket][i]) == K){
+				SEARCH += count;
+				return 1;
+			}
+		}
+
+		if (last_char != "~") {
+			bucket = stoi(last_char);
+		}
+	} while (last_char != "~");
+	return 0;
+
+}
+
+void avg_search_cost (int queries[], int b) {
+	int s_count = 0;
+	int success = 0;
+	for (int i=0;i<50;i++) {
+		success = lookup(queries[i], b);
+		s_count += success;
+	}
+	double cost = (double)SEARCH/s_count;
+	search_cost.push_back(cost);
+	SEARCH = 0;
+}
+
+void makefiles(string db) {
+	ofstream File;
+    File.open("su_"+db+".txt");
+
+	for (int i=0;i<storage_util.size();i++) {
+		File << storage_util[i] << endl;
+	}
+	File.close();
+
+    File.open("sc_"+db+".txt");
+
+	for (int i=0;i<split_cost.size();i++) {
+		File << split_cost[i] << endl;
+	}
+	File.close();
+
+	File.open("records_"+db+".txt");
+
+	for (int i=0;i<records_count.size();i++) {
+		File << records_count[i] << endl;
+	}
+	File.close();
+
+	File.open("searchc_"+db+".txt");
+
+	for (int i=0;i<search_cost.size();i++) {
+		File << search_cost[i] << endl;
+	}
+	File.close();
+}
+
+void initilize() {
+	N = 0;
+	B = 2;
+	s = 0;
+	S = 0;
+	h = 2;
+	S_COST = 0;
+	SEARCH = 0.0;
+
+	storage_util.clear();
+	split_cost.clear();
+	records_count.clear();
+	search_cost.clear();
+	mem.clear();
+	bitmap.clear();
+}
+
+void run (int buc_cap, int max_buckets, string db) {
+	initilize();
+	int b = buc_cap;
+	MAX_BUCKETS = max_buckets;
 
 	initialize_memory(b);
 	get_records(db,dataset);
+	printf("%d\n",MAX_BUCKETS);
 
-	for(int i=0;i<100000;i++) {
-		printf("%d\n",i+1);
-		printf("# Insterting Element %d of value %d from database.\n",i+1, dataset[i]);
+	for(int i=0;i<TOTAL_RECORDS;i++) {
 		insert(dataset[i], b);
-		printf("---------------------------------------\n");
-		for (int i=0;i<mem[870].size();i++) {
-			printf("%s ",mem[870][i].c_str());
-			
-		}
-		printf("\n---------------------------------------\n");
 		N += 1;
-		// storage_utilization(b);
-		// if (N%5000 == 0) {
-		// 	int queries[50];
-		// 	generate_queries(queries);
-		// 	int search_cost = avg_search_cost(queries);
-		// }
+		storage_utilization(b);
+		if (N%5000 == 0) {
+			int queries[50];
+			generate_queries(queries);
+			avg_search_cost(queries,b);
+		}
 	}
-	for (int i=0;i<b+2;i++) {
-		printf("%s",mem[0][i].c_str());
-	}
-	
+	makefiles(db);
+}
+
+int main () {
+	run(10,pow(2.0,14.0),"db_a");
+	run(70,pow(2.0,12.0),"db_b");
+
 	return 0;
 }
